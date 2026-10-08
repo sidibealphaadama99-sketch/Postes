@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet de postes</title>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#14212b;--mut:#5d6b76;--line:#d5dce2;--hta:#d98a00;--bt:#0b7a75;--me:#1f5fd6;--acc:#14212b;--accink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f171d;--card:#18232b;--ink:#e8eef2;--mut:#93a2ad;--line:#2b3a45;--hta:#f0a62a;--bt:#37b5ad;--me:#6a9bff;--acc:#e8eef2;--accink:#0f171d}}
+:root[data-theme="dark"]{--bg:#0f171d;--card:#18232b;--ink:#e8eef2;--mut:#93a2ad;--line:#2b3a45;--hta:#f0a62a;--bt:#37b5ad;--me:#6a9bff;--acc:#e8eef2;--accink:#0f171d}
+*{box-sizing:border-box}html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 6px}h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+nav{display:flex;gap:6px;padding:8px 12px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:2}
+nav button{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-size:14px}
+nav button[aria-selected=true]{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+main{padding:4px 12px 28px;max-width:640px;margin:0 auto}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+svg{width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+textarea{min-height:110px;font-size:13px}
+.btn{padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;text-decoration:none;display:inline-block}
+.btn.p{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.row>*{flex:1}
+.item{display:flex;justify-content:space-between;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border:0}.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;color:#fff}
+.hta{background:var(--hta);color:#14212b}.bt{background:var(--bt);color:#fff}
+.mut{color:var(--mut);font-size:13px}.err{color:#c0392b;font-size:13px;margin-top:6px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--me);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><h1>Carnet de postes</h1><p>Plan, recherche et ajout de postes sur le terrain</p></header>
+<nav role="tablist">
+<button role="tab" data-t="map" aria-selected="true">Plan</button>
+<button role="tab" data-t="list" aria-selected="false">Chercher</button>
+<button role="tab" data-t="add" aria-selected="false">Ajouter</button>
+<button role="tab" data-t="data" aria-selected="false">Données</button>
+</nav>
+<main>
+<section id="map" class="on">
+<div class="row" style="margin:0 0 8px"><button class="btn p" id="loc">Ma position</button><button class="btn" id="zi">Zoom +</button><button class="btn" id="zo">Zoom −</button></div>
+<div id="locmsg" class="mut"></div>
+<svg id="svg" viewBox="0 0 360 400" role="img" aria-label="Plan des postes"></svg>
+<div class="mut" style="margin:6px 2px"><span style="color:var(--hta)">●</span> HTA &nbsp; <span style="color:var(--bt)">●</span> BT &nbsp; <span style="color:var(--me)">◎</span> Vous &nbsp; Nord en haut</div>
+<div id="sel"></div>
+</section>
+<section id="list">
+<input id="q" type="search" placeholder="Nom ou numéro du poste" aria-label="Chercher un poste">
+<div class="card" id="res" style="margin-top:10px;padding:0"></div>
+</section>
+<section id="add">
+<div class="card">
+<b id="addt">Nouveau poste</b>
+<label for="f_nom">Nom du poste</label><input id="f_nom" placeholder="Ex. Poste Marché Zabré Daaga">
+<label for="f_num">Numéro</label><input id="f_num" placeholder="Ex. P-0123">
+<label for="f_type">Type</label><select id="f_type"><option>HTA</option><option>BT</option></select>
+<div class="row"><div><label for="f_lat">Latitude</label><input id="f_lat" inputmode="decimal"></div><div><label for="f_lon">Longitude</label><input id="f_lon" inputmode="decimal"></div></div>
+<div class="row"><button class="btn" id="usepos">Utiliser ma position</button></div>
+<label for="f_paste">Ou collez « latitude, longitude » (copié depuis Google Maps)</label><input id="f_paste" placeholder="12.37140, -1.51970">
+<label for="f_note">Note (accès, repère)</label><input id="f_note">
+<div id="addmsg" class="err" style="font-weight:600;font-size:15px"></div>
+<div class="row"><button class="btn p" id="save">Enregistrer le poste</button><button class="btn" id="cancel">Annuler</button></div>
+</div>
+</section>
+<section id="data">
+<div class="card"><b>Exporter</b><p class="mut">Copiez ce texte et collez-le dans Excel ou envoyez-le par message. Colonnes : nom ; numéro ; type ; latitude ; longitude ; note.</p>
+<textarea id="out" readonly></textarea><div class="row"><button class="btn p" id="copy">Copier les postes</button></div><div id="copymsg" class="mut"></div></div>
+<div class="card"><b>Importer</b><p class="mut">Collez des lignes au même format. Les postes sont ajoutés à la liste.</p>
+<textarea id="inp"></textarea><div class="row"><button class="btn p" id="imp">Importer</button></div><div id="impmsg" class="mut"></div></div>
+</section>
+</main>
+<script>
+(function(){
+var K='postes_v1',P=[],me=null,sel=null,Z=1,editId=null,watch=null;
+function load(){try{P=JSON.parse(localStorage.getItem(K)||'[]')||[]}catch(e){P=[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(P))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function R(x){return x*Math.PI/180}
+function dist(a,b){var dl=R(b.lat-a.lat),dn=R(b.lon-a.lon),h=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(R(a.lat))*Math.cos(R(b.lat))*Math.sin(dn/2)*Math.sin(dn/2);return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))}
+function bear(a,b){var y=Math.sin(R(b.lon-a.lon))*Math.cos(R(b.lat)),x=Math.cos(R(a.lat))*Math.sin(R(b.lat))-Math.sin(R(a.lat))*Math.cos(R(b.lat))*Math.cos(R(b.lon-a.lon));return(Math.atan2(y,x)*180/Math.PI+360)%360}
+function card(d){return['N','NE','E','SE','S','SO','O','NO'][Math.round(d/45)%8]}
+function fd(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km'}
+function tab(t){document.querySelectorAll('nav button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===t)});document.querySelectorAll('section').forEach(function(s){s.className=s.id===t?'on':''});if(t==='map')draw();if(t==='list')search();if(t==='data')$('out').value=csv()}
+document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
+function draw(){
+var pts=P.slice();if(me)pts.push(me);var s=$('svg');
+if(!pts.length){s.innerHTML='<text x="180" y="190" text-anchor="middle" fill="currentColor" font-size="15">Aucun poste pour le moment.</text><text x="180" y="212" text-anchor="middle" fill="currentColor" font-size="13" opacity=".7">Allez dans Ajouter pour créer le premier.</text>';return}
+var c=sel?P.filter(function(p){return p.id===sel})[0]:null;
+var la0=0,lo0=0;pts.forEach(function(p){la0+=p.lat;lo0+=p.lon});la0/=pts.length;lo0/=pts.length;
+if(c){la0=c.lat;lo0=c.lon}
+var k=Math.cos(R(la0)),mx=0.0005;
+pts.forEach(function(p){mx=Math.max(mx,Math.abs((p.lon-lo0)*k),Math.abs(p.lat-la0))});
+var sc=150/mx*Z;
+function X(p){return 180+(p.lon-lo0)*k*sc}function Y(p){return 200-(p.lat-la0)*sc}
+var h='<g stroke="currentColor" opacity=".12"><line x1="0" y1="200" x2="360" y2="200"/><line x1="180" y1="0" x2="180" y2="400"/></g><text x="180" y="14" text-anchor="middle" font-size="11" fill="currentColor" opacity=".6">N</text>';
+if(me&&c)h+='<line x1="'+X(me)+'" y1="'+Y(me)+'" x2="'+X(c)+'" y2="'+Y(c)+'" stroke="var(--me)" stroke-width="2" stroke-dasharray="5 4"/>';
+P.forEach(function(p){var x=X(p),y=Y(p),col=p.type==='HTA'?'var(--hta)':'var(--bt)',on=p.id===sel;
+h+='<g data-id="'+p.id+'" style="cursor:pointer"><circle cx="'+x+'" cy="'+y+'" r="18" fill="transparent"/>'+(on?'<circle cx="'+x+'" cy="'+y+'" r="11" fill="none" stroke="currentColor" stroke-width="2"/>':'')+'<circle cx="'+x+'" cy="'+y+'" r="7" fill="'+col+'"/><text x="'+x+'" y="'+(y-12)+'" text-anchor="middle" font-size="10" fill="currentColor">'+esc(p.num||p.nom).slice(0,12)+'</text></g>'});
+if(me)h+='<circle cx="'+X(me)+'" cy="'+Y(me)+'" r="9" fill="none" stroke="var(--me)" stroke-width="3"/><circle cx="'+X(me)+'" cy="'+Y(me)+'" r="3" fill="var(--me)"/>';
+s.innerHTML=h;
+s.querySelectorAll('g[data-id]').forEach(function(g){g.onclick=function(){sel=g.dataset.id;draw();info()}});
+}
+function info(){
+var c=P.filter(function(p){return p.id===sel})[0],e=$('sel');
+if(!c){e.innerHTML='<div class="mut" style="margin:6px 2px">Touchez un poste pour voir la distance et la direction.</div>';return}
+var d=me?'<p><b>'+fd(dist(me,c))+'</b> vers le '+card(bear(me,c))+' ('+Math.round(bear(me,c))+'°)</p>':'<p class="mut">Touchez « Ma position » pour voir la distance.</p>';
+e.innerHTML='<div class="card"><b>'+esc(c.nom)+'</b> <span class="tag '+c.type.toLowerCase()+'">'+c.type+'</span><div class="mut">'+esc(c.num)+' · '+c.lat.toFixed(5)+', '+c.lon.toFixed(5)+'</div>'+(c.note?'<div>'+esc(c.note)+'</div>':'')+d+'<div class="row"><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q='+c.lat+','+c.lon+'">Ouvrir dans Maps</a><button class="btn" id="ed">Modifier</button><button class="btn" id="del">Supprimer</button></div></div>';
+$('ed').onclick=function(){edit(c)};
+$('del').onclick=function(){if(confirm('Supprimer ce poste ?')){P=P.filter(function(p){return p.id!==c.id});save();sel=null;draw();info()}};
+}
+function getpos(cb){
+var m=$('locmsg');if(!navigator.geolocation){m.className='err';m.textContent='Position non disponible sur cet appareil.';return}
+m.className='mut';m.textContent='Recherche de la position…';
+navigator.geolocation.getCurrentPosition(function(r){me={lat:r.coords.latitude,lon:r.coords.longitude};m.textContent='Position trouvée (±'+Math.round(r.coords.accuracy)+' m)';if(cb)cb();draw();info()},function(){m.className='err';m.textContent='Position refusée. Autorisez la localisation ou saisissez les coordonnées à la main.'},{enableHighAccuracy:true,timeout:15000})}
+$('loc').onclick=function(){getpos()};
+$('zi').onclick=function(){Z=Math.min(Z*1.6,40);draw()};
+$('zo').onclick=function(){Z=Math.max(Z/1.6,0.2);draw()};
+function search(){
+var q=$('q').value.trim().toLowerCase(),l=P.filter(function(p){return!q||(p.nom+' '+p.num).toLowerCase().indexOf(q)>-1});
+if(me)l.sort(function(a,b){return dist(me,a)-dist(me,b)});else l.sort(function(a,b){return a.nom.localeCompare(b.nom)});
+$('res').innerHTML=l.length?l.map(function(p){return'<div class="item" data-id="'+p.id+'"><div><b>'+esc(p.nom)+'</b><div class="mut">'+esc(p.num)+'</div></div><div style="text-align:right"><span class="tag '+p.type.toLowerCase()+'">'+p.type+'</span>'+(me?'<div class="mut">'+fd(dist(me,p))+'</div>':'')+'</div></div>'}).join(''):'<div class="item mut">'+(P.length?'Aucun résultat.':'Aucun poste enregistré.')+'</div>';
+$('res').querySelectorAll('.item[data-id]').forEach(function(i){i.onclick=function(){sel=i.dataset.id;Z=1;tab('map');info()}})}
+$('q').oninput=search;
+function edit(p){editId=p?p.id:null;$('addt').textContent=p?'Modifier le poste':'Nouveau poste';$('f_nom').value=p?p.nom:'';$('f_num').value=p?p.num:'';$('f_type').value=p?p.type:'HTA';$('f_lat').value=p?p.lat:'';$('f_lon').value=p?p.lon:'';$('f_note').value=p?p.note:'';$('f_paste').value='';$('addmsg').textContent='';tab('add')}
+$('usepos').onclick=function(){getpos(function(){$('f_lat').value=me.lat.toFixed(6);$('f_lon').value=me.lon.toFixed(6)})};
+$('cancel').onclick=function(){edit(null);tab('map')};
+$('f_paste').oninput=function(){var n=this.value.match(/-?\d+[.,]\d+|-?\d+/g);if(n&&n.length>=2){$('f_lat').value=n[0].replace(',','.');$('f_lon').value=n[1].replace(',','.')}};
+function fail(t){var m=$('addmsg');m.textContent=t;try{m.scrollIntoView({block:'center'})}catch(e){}}
+$('save').onclick=function(){try{
+var nom=$('f_nom').value.trim(),la=parseFloat($('f_lat').value.replace(',','.')),lo=parseFloat($('f_lon').value.replace(',','.'));
+$('addmsg').textContent='';
+if(!nom){fail('Entrez le nom du poste.');return}
+if(isNaN(la)||isNaN(lo)||Math.abs(la)>90||Math.abs(lo)>180){fail('Coordonnées manquantes. Collez-les dans le champ « latitude, longitude » ou touchez « Utiliser ma position ».');return}
+var o={id:editId||('p'+Date.now()),nom:nom,num:$('f_num').value.trim(),type:$('f_type').value,lat:la,lon:lo,note:$('f_note').value.trim()};
+if(editId)P=P.map(function(p){return p.id===editId?o:p});else P.push(o);
+save();sel=o.id;edit(null);Z=1;tab('map');info()}catch(e){fail('Erreur : '+e.message)}};
+function csv(){return P.map(function(p){return[p.nom,p.num,p.type,p.lat,p.lon,p.note].map(function(v){return String(v==null?'':v).replace(/[;\n]/g,' ')}).join(';')}).join('\n')}
+$('copy').onclick=function(){var t=$('out');t.focus();t.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}$('copymsg').textContent=ok?'Copié.':'Texte sélectionné : appuyez longuement puis Copier.'};
+$('imp').onclick=function(){var n=0;$('inp').value.split('\n').forEach(function(l,i){var f=l.split(/[;,]/).map(function(x){return x.trim()});if(f.length<5)return;var la=parseFloat(f[3]),lo=parseFloat(f[4]);if(!f[0]||isNaN(la)||isNaN(lo))return;P.push({id:'p'+Date.now()+i,nom:f[0],num:f[1],type:f[2].toUpperCase()==='BT'?'BT':'HTA',lat:la,lon:lo,note:f.slice(5).join(' ')});n++});save();$('impmsg').textContent=n+' poste(s) importé(s).';$('out').value=csv();$('inp').value=''};
+load();draw();info();
+})();
+</script>
+</body>
+</html>
